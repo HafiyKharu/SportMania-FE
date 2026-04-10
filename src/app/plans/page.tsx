@@ -6,6 +6,7 @@ import { planService } from '@/services/planService';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import type { PlanDto } from '@/types';
 import { toast } from 'sonner';
+import { ScrollReveal } from '@/components/ScrollReveal';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5235';
 
@@ -54,26 +55,28 @@ export default function PlansPage() {
   if (loading) return <LoadingSpinner />;
 
   return (
-    <div className="max-w-6xl mx-auto animate-slide-up">
+    <div className="max-w-6xl mx-auto">
       {isRefreshing && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
           <LoadingSpinner />
         </div>
       )}
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-sm-text-light">Available Plans</h1>
-        <div className="flex gap-2">
-          <button
-            onClick={() => router.push('/plans/create')}
-            className="flex items-center gap-2 bg-sm-primary text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
-          >
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-            </svg>
-            Create New Plan
-          </button>
+      <ScrollReveal>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold text-sm-text-light">Available Plans</h1>
+          <div className="flex gap-2">
+            <button
+              onClick={() => router.push('/plans/create')}
+              className="flex items-center gap-2 bg-sm-primary text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+              </svg>
+              Create New Plan
+            </button>
+          </div>
         </div>
-      </div>
+      </ScrollReveal>
 
       {errorMessage && (
         <div className="bg-red-500/10 border border-red-500 text-red-400 px-4 py-3 rounded mb-4">
@@ -88,16 +91,16 @@ export default function PlansPage() {
       )}
 
       {plans.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-sm-muted text-lg">No plans available. Create your first plan!</p>
-        </div>
+        <ScrollReveal>
+          <div className="text-center py-12">
+            <p className="text-sm-muted text-lg">No plans available. Create your first plan!</p>
+          </div>
+        </ScrollReveal>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {plans.map((plan) => (
-            <div
-              key={plan.planId}
-              className="bg-sm-card border border-sm-border rounded-lg overflow-hidden flex flex-col sm:flex-row"
-            >
+          {plans.map((plan, index) => (
+            <ScrollReveal key={plan.planId} delay={index * 0.06} y={18}>
+              <div className="bg-sm-card border border-sm-border rounded-lg overflow-hidden flex flex-col sm:flex-row">
               {plan.imageUrl && (
                 <div
                   className="sm:w-48 h-48 sm:h-auto flex-shrink-0 cursor-pointer"
@@ -141,7 +144,8 @@ export default function PlansPage() {
                   </button>
                 </div>
               </div>
-            </div>
+              </div>
+            </ScrollReveal>
           ))}
         </div>
       )}

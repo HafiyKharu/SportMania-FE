@@ -1,15 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { planService } from '@/services/planService';
 import { transactionService } from '@/services/transactionService';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import type { PlanDto } from '@/types';
 import { toast } from 'sonner';
+import { motion, useReducedMotion, useScroll, useTransform } from 'motion/react';
+import { ScrollReveal } from '@/components/ScrollReveal';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5235';
 
 export default function HomePage() {
+  const prefersReducedMotion = useReducedMotion();
   const [plans, setPlans] = useState<PlanDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
@@ -20,6 +23,11 @@ export default function HomePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionError, setSubmissionError] = useState('');
   const [formErrors, setFormErrors] = useState<{ email?: string; phoneNumber?: string }>({});
+
+  const { scrollYProgress } = useScroll();
+
+  const heroY = useTransform(scrollYProgress, [0, 1], [0, -44]);
+  const heroOpacity = useTransform(scrollYProgress, [0, 1], [1, 0.3]);
 
   useEffect(() => {
     loadPlans();
@@ -89,7 +97,8 @@ export default function HomePage() {
     try {
       const result = await transactionService.initiatePayment(trimmedEmail, selectedPlan.planId, trimmedPhone);
       if (result.isSuccess && result.redirectUrl) {
-        window.open(result.redirectUrl, '_blank');
+        const redirectUrl = normalizePaymentRedirectUrl(result.redirectUrl);
+        window.location.assign(redirectUrl);
         toast.success('Payment initiated.');
         closeModal();
       } else {
@@ -104,6 +113,39 @@ export default function HomePage() {
     }
   }
 
+  function normalizePaymentRedirectUrl(rawUrl: string): string {
+    try {
+      const parsedUrl = new URL(rawUrl, window.location.origin);
+      const normalizeToFrontendOrigin = (urlToNormalize: URL): URL => {
+        urlToNormalize.protocol = window.location.protocol;
+        urlToNormalize.host = window.location.host;
+        return urlToNormalize;
+      };
+
+      const isTransactionResultPath = (pathname: string): boolean =>
+        pathname.startsWith('/transactions/success/') || pathname.startsWith('/transactions/failed/');
+
+      if (isTransactionResultPath(parsedUrl.pathname)) {
+        normalizeToFrontendOrigin(parsedUrl);
+      }
+
+      parsedUrl.searchParams.forEach((value, key) => {
+        try {
+          const nestedUrl = new URL(value);
+          if (isTransactionResultPath(nestedUrl.pathname)) {
+            parsedUrl.searchParams.set(key, normalizeToFrontendOrigin(nestedUrl).toString());
+          }
+        } catch {
+          // Ignore non-URL query parameter values.
+        }
+      });
+
+      return parsedUrl.toString();
+    } catch {
+      return rawUrl;
+    }
+  }
+
   const isPopular = (plan: PlanDto) => plan.name.toLowerCase().includes('monthly');
 
   if (loading) return <LoadingSpinner text="Loading plans..." />;
@@ -111,39 +153,49 @@ export default function HomePage() {
   return (
     <div className="max-w-7xl mx-auto">
       {/* Hero Section */}
-      <section className="text-center py-16 px-4 animate-slide-up">
-        <h1 className="text-5xl font-bold mb-4 ">
-          <span className="text-gradient">Stream Your Favorite Content</span>
-        </h1>
-        <p className="text-sm-muted text-lg max-w-2xl mx-auto animation-delay-100">
-          Choose the perfect plan for your streaming needs. Access premium content with our flexible subscription options.
-        </p>
-      </section>
+      <motion.section
+        className="text-center py-16 px-4"
+        style={prefersReducedMotion ? undefined : { y: heroY, opacity: heroOpacity }}
+      >
+        <ScrollReveal>
+          <h1 className="text-5xl font-bold mb-4 ">
+            <span className="text-gradient">Stream Your Favorite Content</span>
+          </h1>
+        </ScrollReveal>
+        <ScrollReveal delay={0.08}>
+          <p className="text-sm-muted text-lg max-w-2xl mx-auto">
+            Choose the perfect plan for your streaming needs. Access premium content with our flexible subscription options.
+          </p>
+        </ScrollReveal>
+      </motion.section>
 
       {/* Error */}
       {errorMessage && (
-        <div className="bg-red-500/10 border border-red-500 text-red-400 px-4 py-3 rounded mb-6 animate-slide-up shadow-lg shadow-red-500/10">
-          <div className="flex items-center gap-2">
-            <span>⚠️</span>
-            {errorMessage}
+        <ScrollReveal>
+          <div className="bg-red-500/10 border border-red-500 text-red-400 px-4 py-3 rounded mb-6 shadow-lg shadow-red-500/10">
+            <div className="flex items-center gap-2">
+              <span>⚠️</span>
+              {errorMessage}
+            </div>
           </div>
-        </div>
+        </ScrollReveal>
       )}
 
       {/* Pricing Cards */}
       <section className="pb-16 px-4">
-        <h2 className="text-3xl font-bold text-center text-sm-text-light mb-8 animate-fade-in">
-          Choose Your Plan
-        </h2>
+        <ScrollReveal>
+          <h2 className="text-3xl font-bold text-center text-sm-text-light mb-8">
+            Choose Your Plan
+          </h2>
+        </ScrollReveal>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
           {plans.map((plan, index) => (
-            <div
-              key={plan.planId}
-              style={{ animationDelay: `${index * 150}ms` }}
-              className={`animate-slide-up opacity-0 relative flex flex-col bg-sm-card border rounded-lg overflow-hidden transition-all duration-300 hover:scale-[1.03] hover:shadow-[0_10px_30px_rgba(13,110,253,0.3)] ${
-                isPopular(plan) ? 'border-sm-primary' : 'border-sm-border'
-              }`}
-            >
+            <ScrollReveal key={plan.planId} delay={index * 0.08} y={22}>
+              <div
+                className={`relative flex flex-col bg-sm-card border rounded-lg overflow-hidden transition-transform duration-300 hover:scale-[1.03] hover:shadow-[0_10px_30px_rgba(13,110,253,0.3)] ${
+                  isPopular(plan) ? 'border-sm-primary' : 'border-sm-border'
+                }`}
+              >
               {isPopular(plan) && (
                 <div className="absolute top-3 right-3 bg-sm-primary text-white text-xs font-bold px-3 py-1 rounded-full">
                   Most Popular
@@ -191,7 +243,8 @@ export default function HomePage() {
                   Subscribe Now
                 </button>
               </div>
-            </div>
+              </div>
+            </ScrollReveal>
           ))}
         </div>
       </section>
