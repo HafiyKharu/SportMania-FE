@@ -1,5 +1,10 @@
 import { apiFetch } from '@/lib/api';
-import type { TransactionDto, PaymentResponseDto, ErrorResponseDto } from '@/types';
+import type {
+  TransactionDto,
+  PaymentResponseDto,
+  ErrorResponseDto,
+  TransactionViewResponse,
+} from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5235';
 
@@ -35,6 +40,39 @@ export const transactionService = {
       console.error(`Error fetching transaction ${transactionId}:`, error);
       return null;
     }
+  },
+
+  async getTransactionView(transactionId: string): Promise<TransactionViewResponse | null> {
+    return this.fetchTransactionViewFromEndpoints([`api/transactions/${transactionId}`]);
+  },
+
+  async completePaymentTransaction(transactionId: string): Promise<TransactionViewResponse | null> {
+    return this.fetchTransactionViewFromEndpoints([
+      `api/payments/complete/${transactionId}`,
+      `api/transactions/${transactionId}`,
+    ]);
+  },
+
+  async fetchTransactionViewFromEndpoints(endpoints: string[]): Promise<TransactionViewResponse | null> {
+    for (const endpoint of endpoints) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/${endpoint.replace(/^\//, '')}`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+          cache: 'no-store',
+        });
+
+        if (!response.ok) {
+          continue;
+        }
+
+        return (await response.json()) as TransactionViewResponse;
+      } catch {
+        // Continue trying fallback endpoint variants.
+      }
+    }
+
+    return null;
   },
 
   async getAllTransactions(): Promise<TransactionDto[]> {

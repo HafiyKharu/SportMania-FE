@@ -5,13 +5,19 @@ import { isLoggedIn, isAdmin } from '@/lib/auth';
 import { useEffect } from 'react';
 
 const PUBLIC_ROUTES = ['/', '/login'];
+const PUBLIC_PREFIX_ROUTES = ['/transactions/success/', '/transactions/failed/'];
+
+function isPublicRoute(pathname: string) {
+  if (PUBLIC_ROUTES.includes(pathname)) return true;
+  return PUBLIC_PREFIX_ROUTES.some((routePrefix) => pathname.startsWith(routePrefix));
+}
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
 
   useEffect(() => {
-    if (PUBLIC_ROUTES.includes(pathname)) return;
+    if (isPublicRoute(pathname)) return;
 
     if (!isLoggedIn()) {
       router.replace('/login');

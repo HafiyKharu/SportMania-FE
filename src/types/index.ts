@@ -64,3 +64,16 @@ export interface InitiatePaymentRequest {
   planId: string;
   phone: string;
 }
+
+export interface TransactionViewResponse {
+  transactionId: string;
+  customerId: string;
+  planId: string;
+  keyId?: string | null;
+  guildId: number;
+  amount: string;
+  paymentStatus: 'Pending' | 'Success' | 'Failed' | string;
+  billCode?: string | null;
+  isKeyViewed: boolean;
+  licenseKey?: string | null;
+}
